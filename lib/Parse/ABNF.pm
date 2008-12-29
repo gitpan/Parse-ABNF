@@ -1,11 +1,10 @@
 package Parse::ABNF;
-
 use 5.006;
 use strict;
 use warnings;
 use Parse::RecDescent;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 our $Grammar = q{
 
   {
@@ -27,8 +26,10 @@ our $Grammar = q{
 
   empty_line: c_wsp(s?) c_nl
 
-  # 
-  rulelist: empty_line(s?) rule(s) {
+  # The /^\Z/ ensures that we don't leave unparsed trailing content
+  # if there are errors in the grammar (Parse::RecDescent's default)
+
+  rulelist: empty_line(s?) rule(s) /^\Z/ {
     $return = $item[2];
   }
 
@@ -40,6 +41,9 @@ our $Grammar = q{
     $return = Make(Rule => name => $item[1], value => $item[5], combine => 'choice');
     
   }
+
+  # Generate an error message if the rule production is not matched.
+  rule: <error>
 
   rulename: /[a-zA-Z][a-zA-Z0-9-]*/ {
     $return = $item[1];
@@ -197,8 +201,8 @@ sub new {
 sub parse {
   my $self = shift;
   my $string = shift;
-
-  return $self->{_p}->parse($string)
+  my $result = $self->{_p}->parse($string);
+  return $result;
 }
 
 1;
@@ -279,6 +283,12 @@ is parsed into
 Until this module matures, this format is subject to change. Contact the
 author if you would like to depend on this module.
 
+=head1 ERROR HANDLING
+
+The C<parse> method will retun C<undef> if there is an error in the grammar
+and C<Parse::RecDescent> will automatically print an error message. Future
+versions might throw an exception instead.
+
 =head1 CORE RULES
 
 The ABNF specification defines some Core Rules that are used without
@@ -295,7 +305,7 @@ If necessary, convert the line endings e.g. using
 The ABNF specification disallows white space preceding the left hand side,
 and so does this module. Remove it prior to passing the grammar e.g. using
 
-  $grammar =~ s/^\s+(?=[\w_]+\s*=)//mg;
+  $grammar =~ s/^\s+(?=[\w-]+\s*=)//mg;
 
 This module does not do that for you in order to preserve line and column
 numbers. Patches adapting the grammar to allow leading white space welcome.
@@ -305,8 +315,6 @@ That is the same syntax as used for prose values, and this module makes no
 attempt to differentiate the two.
 
 Comments are not currently made available, this may change in future versions.
-
-There is currently not much error handling. Patches welcome.
 
 =head1 BUG REPORTS
 
