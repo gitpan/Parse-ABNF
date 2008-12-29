@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Parse::RecDescent;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 our $Grammar = q{
 
   {
@@ -13,19 +13,9 @@ our $Grammar = q{
       my $class = shift;
       my %opts = @_;
 
-      # TODO: this could need some revision
-
-      return $opts{value}->[0] if $class eq 'Group'
-        and ref $opts{value} eq 'ARRAY' and @{$opts{value}} == 1;
-
-      return $opts{value} if $class eq 'Group'
-        and ref $opts{value} ne 'ARRAY';
-
-      return $opts{value}->[0] if $class eq 'Choice'
-        and ref $opts{value} eq 'ARRAY' and @{$opts{value}} == 1;
-
-      return $opts{value}->[0] if $class eq 'Choice'
-        and ref $opts{value} ne 'ARRAY';
+      # Unfold single item groups and choices
+      return $opts{value}->[0] if $class eq 'Group' and @{$opts{value}} == 1;
+      return $opts{value}->[0] if $class eq 'Choice' and @{$opts{value}} == 1;
 
       return { class => $class, %opts };
     }
@@ -35,24 +25,23 @@ our $Grammar = q{
     $return = $item[1];
   }
 
+  empty_line: c_wsp(s?) c_nl
+
   # 
-  rulelist: rule(s) {
-    # TODO: this is not a nice way to get rid of empty lines
-    $return = [grep ref, @{$item[1]}];
+  rulelist: empty_line(s?) rule(s) {
+    $return = $item[2];
   }
 
-  rule: c_wsp(s?) c_nl 
-
-  rule: rulename c_wsp(s?) "=" c_wsp(s?) elements c_nl {
+  rule: rulename c_wsp(s?) "=" c_wsp(s?) elements c_nl empty_line(s?) {
     $return = Make(Rule => name => $item[1], value => $item[5]);
   }
 
-  rule: rulename c_wsp(s?) "=/" c_wsp(s?) elements c_nl {
+  rule: rulename c_wsp(s?) "=" alt_op c_wsp(s?) elements c_nl empty_line(s?) {
     $return = Make(Rule => name => $item[1], value => $item[5], combine => 'choice');
     
   }
 
-  rulename: /[a-zA-Z0-9-]+/ {
+  rulename: /[a-zA-Z][a-zA-Z0-9-]*/ {
     $return = $item[1];
   }
 
@@ -114,24 +103,25 @@ our $Grammar = q{
 
   # 
   group: "(" c_wsp(s?) alternation c_wsp(s?) ")" {
-    $return = Make(Group => value => $item[3]);
+    $return = $item[3];
   }
 
   #
   option: "[" c_wsp(s?) alternation c_wsp(s?) "]" {
-    my $group = Make(Group => value => $item[3]);
-    $return = Make(Repetition => min => 0, max => 1, value => $group);
+    $return = Make(Repetition => min => 0, max => 1, value => $item[3]);
   }
 
   c_wsp: /[ \t]/
 
   c_wsp: c_nl /[ \t]/
 
-  c_nl: "\n"
+  newline: "\n"
+
+  c_nl: newline
 
   c_nl: comment
 
-  comment: /;[ \t\x21-\x7e]*\n/
+  comment: /;[ \t\x21-\x7e]*/ newline
 
   char_val: '"' /[\x20-\x21\x23-\x7E]*/ '"' {
     $return = Make(Literal => value => $item[2]);
@@ -153,15 +143,15 @@ our $Grammar = q{
     $return = Make(Range => type => 'hex', min => $item[2], max => $item[4]);
   }
 
-  bin_val: "%b" /[01]+/ /(?:\.[01]+)*/  {
+  bin_val: "%b" /[01]+/ /(?:\.[01]+)*/ {
     $return = Make(String => type => 'binary',  value => [split/\./, "$item[2]$item[3]"]);
   }
 
-  dec_val: "%d" /\d+/ /(?:\.\d+)*/  {
+  dec_val: "%d" /\d+/ /(?:\.\d+)*/ {
      $return = Make(String => type => 'decimal', value => [split/\./, "$item[2]$item[3]"]);
   }
 
-  hex_val: "%x" /[0-9a-fA-F]+/ /(?:\.[0-9a-fA-F]+)*/  {
+  hex_val: "%x" /[0-9a-fA-F]+/ /(?:\.[0-9a-fA-F]+)*/ {
     $return = Make(String => type => 'hex', value => [split/\./, "$item[2]$item[3]"]);
   }
 

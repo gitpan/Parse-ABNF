@@ -1,5 +1,10 @@
 Revision history for Perl extension Parse::ABNF.
 
+0.03  Mon Dec 29 03:03:03 2008
+	- Simplified empty line stripping
+	- fixed rulename production
+	- Cleaned up unfolding code
+
 0.02  Mon Dec 29 02:02:02 2008
 	- Added _ to white space removal regex suggestion
 	- Added core rules access to the synopsis
