@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Parse-ABNF
-version:             0.01
+version:             0.02
 abstract:            Parse IETF Augmented BNF (ABNF) grammars.
 license:             perl
 author:              

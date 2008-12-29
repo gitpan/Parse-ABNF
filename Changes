@@ -1,4 +1,10 @@
 Revision history for Perl extension Parse::ABNF.
 
+0.02  Mon Dec 29 02:02:02 2008
+	- Added _ to white space removal regex suggestion
+	- Added core rules access to the synopsis
+	- Fixed a bug in parsing %mAA.BB... strings
+	- Simplified parsing %mAA.BB... strings
+
 0.01  Thu Dec 25 01:16:29 2008
 	- original version; created by h2xs

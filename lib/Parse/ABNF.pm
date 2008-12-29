@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Parse::RecDescent;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 our $Grammar = q{
 
   {
@@ -91,8 +91,10 @@ our $Grammar = q{
     $return = $item[1];
   }
 
+  alt_op: "/"
+
   #
-  alternation: concatenation (c_wsp(s?) "/" c_wsp(s?) concatenation)(s?) {
+  alternation: concatenation (c_wsp(s?) alt_op c_wsp(s?) concatenation)(s?) {
     $return = Make(Choice => value => [$item[1], @{$item[2]}]);
   }
 
@@ -151,34 +153,16 @@ our $Grammar = q{
     $return = Make(Range => type => 'hex', min => $item[2], max => $item[4]);
   }
 
-  # TODO: I would like to combine the one/many cases but
-  # the first attempt failed for some unknown reason.
-
-  bin_val: "%b" /[01]+/ /(?:\.[01]+)+/  {
-    my @trails = split /\./, $item[3];
-    $return = Make(String => type => 'binary', value => [@trails[1 .. $#trails]]);
+  bin_val: "%b" /[01]+/ /(?:\.[01]+)*/  {
+    $return = Make(String => type => 'binary',  value => [split/\./, "$item[2]$item[3]"]);
   }
 
-  bin_val: "%b" /[01]+/ {
-    $return = Make(String => type => 'binary', value => [$item[2]]);
+  dec_val: "%d" /\d+/ /(?:\.\d+)*/  {
+     $return = Make(String => type => 'decimal', value => [split/\./, "$item[2]$item[3]"]);
   }
 
-  dec_val: "%d" /\d+/ /(?:\.\d+)+/  {
-    my @trails = split /\./, $item[3];
-    $return = Make(String => type => 'decimal', value => [@trails[1 .. $#trails]]);
-  }
-
-  dec_val: "%d" /\d+/ {
-    $return = Make(String => type => 'decimal', value => [$item[2]]);
-  }
-
-  hex_val: "%x" /[0-9a-fA-F]+/ /(?:\.[0-9a-fA-F]+)+/  {
-    my @trails = split /\./, $item[3];
-    $return = Make(String => type => 'hex', value => [@trails[1 .. $#trails]]);
-  }
-
-  hex_val: "%x" /[0-9a-fA-F]+/ {
-    $return = Make(String => type => 'hex', value => [$item[2]]);
+  hex_val: "%x" /[0-9a-fA-F]+/ /(?:\.[0-9a-fA-F]+)*/  {
+    $return = Make(String => type => 'hex', value => [split/\./, "$item[2]$item[3]"]);
   }
 
   prose_val: "<" /[\x20-\x3d\x3f-\x7e]*/ ">" {
@@ -208,6 +192,8 @@ WSP            =  SP / HTAB
 
 };
 
+# TODO: Perhaps this is not such a good idea, users may attempt to
+# modify the data and thus affect simultaneously running modules.
 our $CoreRules = do {
   __PACKAGE__->new->parse( $CoreRulesGrammar );
 };
@@ -238,6 +224,7 @@ Parse::ABNF - Parse IETF Augmented BNF (ABNF) grammars.
   use Parse::ABNF;
   my $parser = Parse::ABNF->new;
   my $rules = $parser->parse($grammar);
+  my $core = $Parser::ABNF::CoreRules;
 
 =head1 DESCRIPTION
 
@@ -318,7 +305,7 @@ If necessary, convert the line endings e.g. using
 The ABNF specification disallows white space preceding the left hand side,
 and so does this module. Remove it prior to passing the grammar e.g. using
 
-  $grammar =~ s/^\s+(?=\w+\s*=)//mg;
+  $grammar =~ s/^\s+(?=[\w_]+\s*=)//mg;
 
 This module does not do that for you in order to preserve line and column
 numbers. Patches adapting the grammar to allow leading white space welcome.
