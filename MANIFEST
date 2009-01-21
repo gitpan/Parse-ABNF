@@ -8,4 +8,5 @@ t/98podsyn.t
 t/99podcov.t
 lib/Parse/ABNF.pm
 data/rfc3987.abnf
+eg/abnf2xlx.pl
 META.yml                                 Module meta-data (added by MakeMaker)

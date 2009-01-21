@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Parse::RecDescent;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 our $Grammar = q{
 
   {
@@ -223,7 +223,12 @@ Parse::ABNF - Parse IETF Augmented BNF (ABNF) grammars.
 =head1 DESCRIPTION
 
 This module parses IETF ABNF (STD 68, RFC 5234, 4234, 2234) grammars into
-a list of rules. Artifacts are mapped into hash references as follows:
+a Perl data structure, a list of rules as specified below. It does not
+generate a parser for the language described by some ABNF grammar, but
+makes it easier to turn an ABNF grammar into a grammar suitable for use
+with a parser generator that does not natively support ABNF grammars.
+
+Artifacts are mapped into hash references as follows:
 
   A  = B ~ { class => 'Rule',       value => B, name => A               }
   A /= B ~ { class => 'Rule',       value => B, ... combine => 'choice' }

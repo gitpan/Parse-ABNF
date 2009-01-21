@@ -1,5 +1,10 @@
 Revision history for Perl extension Parse::ABNF.
 
+0.05  Wed Jan 21 02:02:02 2009
+	- Updated POD to clarify the module's purpose, see
+	  https://rt.cpan.org/Ticket/Display.html?id=42587
+	- added eg/abnf2xlx.pl
+
 0.04  Mon Dec 29 23:23:23 2008
 	- Better error handling
 
