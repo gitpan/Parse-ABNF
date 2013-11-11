@@ -66,5 +66,5 @@ my $expt = [
   }
 ];
 
-is_deeply($gram, $expt, "RFC 3987 grammar");
+is_deeply($gram, $expt, "Proper =/ handling");
 
